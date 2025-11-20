@@ -400,20 +400,8 @@
                         img.className = 'cell-image';
                         img.alt = cellData.imageCaption || `预设图片-${i+1}行${j+1}列`;
                         
-                        // 添加删除按钮
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'mt-1 px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 transition-colors';
-                        deleteBtn.innerHTML = '<i class="fa fa-times mr-1"></i>删除图片';
-                        deleteBtn.onclick = function() {
-                            // 删除图片及标题
-                            while (imageContainer.firstChild) {
-                                imageContainer.removeChild(imageContainer.firstChild);
-                            }
-                            deleteBtn.remove();
-                        };
-                        
+                        // 移除删除按钮相关代码
                         imageContainer.appendChild(img);
-                        imageContainer.appendChild(deleteBtn);
                     }
                     
                     // 单元格复制按钮（右上角）
@@ -511,19 +499,8 @@
                     img.className = 'cell-image';
                     img.alt = '自定义图片';
                     
-                    // 添加删除按钮
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'mt-1 px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 transition-colors';
-                    deleteBtn.innerHTML = '<i class="fa fa-times mr-1"></i>删除图片';
-                    deleteBtn.onclick = function() {
-                        while (imageContainer.firstChild) {
-                            imageContainer.removeChild(imageContainer.firstChild);
-                        }
-                        deleteBtn.remove();
-                    };
-                    
+                    // 移除删除按钮相关代码
                     imageContainer.appendChild(img);
-                    imageContainer.appendChild(deleteBtn);
                     
                     showToast('图片已添加到单元格');
                 };
