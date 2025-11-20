@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豬婷專用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 单元格复制按钮样式 */
+        .cell-copy-btn, .cell-image-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        td:hover .cell-copy-btn, td:hover .cell-image-btn {
+            opacity: 1;
+        }
+        
+        /* 右键菜单样式 */
+        .context-menu {
+            position: absolute;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            padding: 0.5rem 0;
+            min-width: 120px;
+        }
+        
+        .context-menu-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        
+        .context-menu-item:hover {
+            background-color: #f3f4f6;
+        }
+        
+        /* 单元格图片样式 */
+        /* 修改单元格内图片的大小限制 */
+        .cell-image {
+            max-width: 250px; /* 调整图片最大宽度 */
+            max-height: 200px; /* 调整图片最大高度 */
+            width: 100%; /* 图片宽度自适应单元格 */
+            height: auto; /* 保持图片比例 */
+        }
+        
+        /* 图片标题样式 */
+        .image-caption {
+            font-size: 0.875rem;
+            color: #4b5563;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .image-upload-input {
+            display: none;
+        }
+
+        /* 修改表格容器的宽度限制 */
+        #dataTable {
+            width: 100%; /* 可以改为固定宽度如800px，或百分比如90% */
+            max-width: 4800; /* 限制最大宽度 */
+            margin: 0 auto; /* 居中显示 */
+        }
+        /* 修改单元格内边距和最小宽度 */
+        td, th {
+            padding: 4px 8px; /* 调整单元格内边距（上下左右） */
+            min-width: 300px; /* 设置单元格最小宽度 */
+            max-width: 1000px; /* 设置单元格最大宽度 */
+        }
+        /* 修改单元格内文本样式 */
+        div[contenteditable="true"] {
+            font-size: 12px; /* 调整字体大小 */
+            line-height: 1.5; /* 调整行高 */
+            min-height: 50px; /* 调整单元格最小高度 */
+            padding: 8px; /* 文本区域内边距 */
+        }
+
+
+        /* 单独调整图片列宽度 */
+        td:nth-child(3), th:nth-child(3) {
+            min-width: 300px; /* 图片列设置更大的最小宽度 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
+        <!-- 标题 -->
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center">
+            <i class="fa fa-table text-primary mr-3"></i>豬婷專用
+        </h1>
+        
+        <!-- 操作按钮区 -->
+        <div class="flex flex-wrap gap-4 mb-6">
+            <button id="copyTableBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+                <i class="fa fa-copy mr-2"></i>复制全部表格内容
+            </button>
+            <button id="clearTableBtn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center">
+                <i class="fa fa-trash-o mr-2"></i>清空表格
+            </button>
+            <button id="resetTableBtn" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center">
+                <i class="fa fa-refresh mr-2"></i>恢复预设内容
+            </button>
+        </div>
+        
+        <!-- 使用说明 -->
+        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 text-sm text-blue-700">
+            <i class="fa fa-info-circle mr-2"></i>
+            <span>表格已预设文字和图片（含图片标题），点击单元格内的复制按钮可复制内容，图片按钮可插入/更换图片</span>
+        </div>
+        
+        <!-- 表格区域 -->
+        <div class="overflow-x-auto mb-8">
+            <table id="dataTable" class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border border-gray-300 p-2 text-left"></th>
+                        <th class="border border-gray-300 p-2 text-left">男</th>
+                        <th class="border border-gray-300 p-2 text-left">女</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 动态生成12行 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 右键菜单 -->
+    <div id="contextMenu" class="context-menu hidden">
+        <div class="context-menu-item" id="copyCellItem">
+            <i class="fa fa-copy mr-2"></i>复制单元格内容
+        </div>
+        <div class="context-menu-item" id="addImageItem">
+            <i class="fa fa-image mr-2"></i>插入/更换图片
+        </div>
+        <div class="context-menu-item" id="clearCellItem">
+            <i class="fa fa-trash mr-2"></i>清空单元格
+        </div>
+    </div>
+    
+    <!-- 复制提示 -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-secondary text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 opacity-0 transition-opacity duration-300">
+        <i class="fa fa-check-circle"></i>
+        <span id="toastMessage">操作成功！</span>
+    </div>
+
+    <script>
+        // 当前选中的单元格和元素
+        let currentCell = null;
+        let currentCellContainer = null;
+        const contextMenu = document.getElementById('contextMenu');
+        
+        // 预设表格数据（12行×3列）- 新增imageCaption字段
+        const presetData = [
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '万圣节(哈利波特)'},
+            '保持人脸不变，去掉原背景，生成4张不同姿势的照片（多角度）。一位亚裔男性的哈利波特格兰芬多万圣节主题写真，身着带有格兰芬多院徽的巫师袍，皮肤白皙，高光打亮五官，浅棕色头发；在融入万圣节元素的复古哥特式魔法药剂教室中，用魔杖搅拌冒大坩埚（橘黄色烟雾），周围点缀着万圣节南瓜灯（内置蜡烛、带鬼脸雕刻）、堆堆南瓜、黑色毛绒蜘蛛，药剂架上还摆放着贴有万圣节主题标签的古老药剂瓶；背景是石质拱顶建筑，穿插着南瓜烛光的暖调光影，地面散落着金色南瓜装饰与万圣节魔法糖果，橘黄色的魔法烟雾组成 “Happy Halloween” 字样（置于画面顶部）；画面照片级真实，细节丰富，暗调色彩中淡黄色烟雾与南瓜橙形成强烈视觉冲击，尽显魔法世界融合万圣节的复古奇幻质感。', 
+            '保持人脸不变，去掉原背景，生成4张不同姿势的照片（多角度）。一位亚裔女性的哈利波特格兰芬多万圣节主题写真，身着带有格兰芬多院徽的巫师袍，皮肤白皙，高光打亮五官，浅棕色头发；在融入万圣节元素的复古哥特式魔法药剂教室中，用魔杖搅拌冒大坩埚（橘黄色烟雾），周围点缀着万圣节南瓜灯（内置蜡烛、带鬼脸雕刻）、堆堆南瓜、黑色毛绒蜘蛛，药剂架上还摆放着贴有万圣节主题标签的古老药剂瓶；背景是石质拱顶建筑，穿插着南瓜烛光的暖调光影，地面散落着金色南瓜装饰与万圣节魔法糖果，橘黄色的魔法烟雾组成 “Happy Halloween” 字样（置于画面顶部）；画面照片级真实，细节丰富，暗调色彩中淡黄色烟雾与南瓜橙形成强烈视觉冲击，尽显魔法世界融合万圣节的复古奇幻质感。',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '森林仙子'},
+            '生成4张照片，3：4比例，保持人物长相百分之百不变。风格滤镜：法式发光少男人像写真，有细腻的胶片颗粒感和朦胧唯美感。背景：森林里，有轻微光束。阳光洒在一片虞美人花上。人物造型：深棕色微卷短发，头上戴着绿草+小白花的花环（部分照片微光打在发丝上）。身穿米白色法式复古风格长衬衫与宽松长裤，整体造型清新自然。 妆容与质感：皮肤通透，脸上有自然红润与轻微唇色，画面带有朦胧感。 构图：人物居中占比三分之一，人物整体在发光。人物蹲在虞美人花丛中，也有站在花丛中，也有提着衣摆奔跑在花丛中等动作。有侧逆光打在脸上，有的光打在飘逸的发丝上。人物表情或温柔浅笑，或眼神放空，动作自然灵动。', 
+            '生成4张照片，3：4比例，保持人物长相百分之百不变。风格滤镜：法式发光少女人像写真，有细腻的胶片颗粒感和朦胧唯美感。背景：森林里，有轻微光束。阳光晒在一片虞美人花上。人物造型：超长卷发(浅棕色)头上戴着绿草+小白花的花环（部分发丝扬在脸上，部分照片微光打在飘起的发丝上）。身穿米白色法式复古风格长裙。妆容：皮肤通透且脸上有腮红，唇釉。画面朦胧感。构图：人物居中占比三分之一，人物整体在发光，人物蹲在虞美人花丛中，也有站在虞美人花丛中，也有手提着裙子奔跑在花丛中等动作。有侧逆光打在脸上，有的光打在飘逸的头发上，人物表情或温柔浅笑或眼神放空，动作自然灵动。',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '聖誕'},
+            '比例：3:4。帮我生成一组4张真人写真人物要求：保持人物五官脸型不变，去除所有原背景。妆容：圣诞氛围感妆容，，淡粉色腮红轻扫颧骨，皮肤白皙细腻，带轻微光泽。服饰：蓝白条纹衬衫 + 酒红色格纹领带，外搭藏青色 V 领针织开衫（带金色纽扣），下搭同色系红格纹长裤；搭配白色中筒袜 + 黑色皮质牛津鞋。动作参考：1.盘腿坐姿，双臂交叉抱于胸前，身体微侧看镜头2.单手托腮，头部轻靠在圣诞树旁3.手持包装好的圣诞礼物（红绿配色），注视礼物4.侧身倚靠在木质柜旁，手搭在柜面配饰：啡色鹿角发箍（偏复古造型）。背景：圣诞主题场景——白色雪松圣诞树（装饰红金彩球+毛绒玩偶）、木质壁炉（旁放圣诞花环+堆叠书籍）、圣诞袜装饰。色调：暖调复古氛围，整体偏暖棕 + 红金配色，带轻微胶片颗粒感，光线柔和温馨。', 
+            '帮我生成一组4张真人写真，保持人物五官脸型不变，去除所有原背景。人物妆容：圣诞氛围感妆容，复古红棕唇釉，淡粉色腮红扫在苹果肌，眼妆用红棕细闪+自然卷翘睫毛，皮肤白皙细腻有轻微光泽。衣服：蓝白条纹衬衫+酒红色格纹领带，外搭藏青色V领针织开衫（带金色纽扣），下搭同色系红格纹及膝長裙；搭配白色中筒堆堆袜+黑色玛丽珍鞋。动作可参考：1. 盘腿坐姿，双臂交叉抱于胸前，身体微侧看镜头2. 单手托腮，头部轻靠在圣诞树旁3. 手持包装好的圣诞礼物（红绿配色），看向礼物4. 侧身倚靠在木质柜旁，手搭在柜面配饰：红色宽边发箍。背景：圣诞主题场景——白色雪松圣诞树（装饰红金彩球+毛绒玩偶）、木质壁炉（旁放圣诞花环+堆叠书籍）、圣诞袜装饰。色调：暖调复古氛围，整体偏暖棕+红金配色，带轻微胶片颗粒感，光线柔和温馨。比例 3:4。',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '巨人微縮街境'},
+            '生成4張圖片，比例：3:4。图中人物的脸不要变，去除全部背景生成图片。这张图片以极具冲击力的超现实主义视角，展现了一位如神话人物般巨大的人物从城市街道探出头。有部分肢体被建筑物遮挡，人物参考我输入图的主体形象的服饰配饰、发型、装饰等，需要保持保持主体一致性、相似度。主体双臂撑着建筑物，头向前伸，仿佛正在窥视或掌控这个微缩世界。采用极端的低角度仰拍使观者如同街上的行人般渺小，仰望这震撼的一幕。背景是细节丰富的复古都市景观；美式复古色调的建筑立面上可见 “大排挡”“澳门猪扒包”等复古招牌，以及交通信号灯、车辆和行人点缀其间，营造出真实又疏离的都市氛围。巨人与微缩城市之间形成极致的尺度对比，人物与建筑产生强烈视觉分离，奇幻的叙事与仰视的构图共同造就了这幅充满压迫感与戏剧张力的非凡影像，藍天白雲。', 
+            '',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '向日葵寫真'},
+            '人物要求：保持人物脸型和五官不变，去除全部背景。发型：黑色短发，部分发丝在阳光下泛光。可搭配蓝白格纹发带或米白色毛边草帽（系蓝白格纹丝带）。服饰：蓝色泡泡袖衬衫（男生版，略宽松），外搭白色碎花背带裤或背带短裤，整体清新复古风格。下搭白色中筒袜 + 黑色皮质乐福鞋。场景：大片向日葵花田（点缀橙色小野花），蓝天+少量白云，逆光效果，有阳光打亮人物发丝和轮廓。色调：富士胶片色调，轻微噪点，空气中偶尔有水汽，叠加气泡、光斑特效，整体温暖清新。拍摄角度：半身或特写，有俯拍、平拍、仰拍多种视角。道具：向日葵、书本、白色耳麦、蝴蝶。比例：3:4。生成不同动作的照片 4张', 
+            '保持人物脸型和五官不变，去除全部背景，生成一组向日葵写真：女生留着棕色双麻花辫（搭配蓝白蝴蝶结），穿着蓝色泡泡袖衬衫+带碎花的白色背带裙，有时带着米白色毛边草帽（可系蓝白格纹丝带），身处大片向日葵花田（搭配橙色小野花），蓝天+少量白云，逆光效果，有阳光打亮人物发丝和轮廓，富士胶片色调，有轻微噪点，空气中有时候有水汽，叠加气泡、光斑特效，人物半身或特写，可以和向日葵、镜子、书本、白色耳麦、蝴蝶等道具互动，生成不同动作的照片 4张，有俯拍、平拍、仰拍各种视角',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: 'Le Petit Prince'},
+            '保持人物脸型和五官不变，去除全部背景，生成一组向日葵写真：女生留着棕色双麻花辫（搭配蓝白蝴蝶结），穿着蓝色泡泡袖衬衫+带碎花的白色背带裙，有时带着米白色毛边草帽（可系蓝白格纹丝带），身处大片向日葵花田（搭配橙色小野花），蓝天+少量白云，逆光效果，有阳光打亮人物发丝和轮廓，富士胶片色调，有轻微噪点，空气中有时候有水汽，叠加气泡、光斑特效，人物半身或特写，可以和向日葵、镜子、书本、白色耳麦、蝴蝶等道具互动，生成不同动作的照片 4张，有俯拍、平拍、仰拍各种视角', 
+            '',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '小紅帽'},
+            '', 
+            '帮我生成4張图片：请生成一组童话奇幻风儿童小红帽风格摄影图，核心元素如下：场景设定•背景：多组不同风格的魔法森林，包含巨型红色毒蘑菇群、繁花盛开的花丛、秋日金黄落叶林、雾气弥漫的幽暗树林等，树木高大且富有层次感，地面覆盖苔藓、落叶或野花丛。•光线：以柔和的侧光、逆光为主，营造出丁达尔光效的梦幻氛围，部分场景可加入暖黄色的黄昏光或清晨的朦胧柔光。装饰与道具•道具：藤编小花篮（可装野花或蘑菇）、复古风小篮子、林间的枯木苔藓景观等。•装饰：森林中的奇幻植物（如巨型蘑菇、发光苔藓、彩色花丛）作为自然装饰。人物设定•服饰装扮：多套红色系“小红帽”风格服饰，包括带帽红裙（有泡泡袖款、无袖款、背带裙款）、白色内搭泡泡袖上衣、红色袜子与小皮鞋等，帽子为经典的红色连帽设计，可系蝴蝶结。•五官特征：保持人物的五官特征不变，去掉帽子，配饰，背景和一切道具，眼睛清澈明亮，天真可爱，嘴唇是天然的粉红色•人物姿态：包含奔跑、蹲坐观察、回眸微笑、低头拾物、踮脚探索等充满童趣的动态或静态姿态。质感与细节•光线：强调光影的层次感，通过柔光营造出电影级的氛围感，高光柔和、阴影有细节。•色调：以暖色调（橙黄、暖棕）和奇幻色调（蓝绿雾感、粉紫花丛）为主，整体色彩饱和度适中，富有油画质感。•画面质感：细腻的胶片质感，细节丰富（如蘑菇上的斑点、衣物的纹理、花草的绒毛），背景适当虚化以突出人物主体。',],
+            [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '阿拉丁'},
+            '严格保持人物的脸部特征、五官比例和头部形态绝对不变，完全一致。人物穿着中东风格白色帽子和白色长袍，坐在蓝色飞毯上，飞毯上有金色花纹，手上拿着小灯笼，旁边放着一个金色的神灯。背景是星空和明亮的满月，远处有一座中东风格的金色灯光城堡。整体风格是温暖童话故事风，柔和梦幻的光影，色调以蓝色和金色为主，可爱、细腻。人物实现无缝融进画面，视觉过渡自然，生成4張一同的相片，比例3:4。', 
+            '',],
+            [{hasImage: false, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: ''},
+            ' ', 
+            '',],
+            [{hasImage: false, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: ''},
+            ' ', 
+            '',],
+            [{hasImage: false, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: ''},
+            ' ', 
+            '',],
+            [{hasImage: false, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: ''},
+            ' ', 
+            '',],
+        ];
+        
+        // 初始化表格（3列×12行）
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTable();
+            
+            // 点击空白处关闭右键菜单
+            document.addEventListener('click', function() {
+                contextMenu.classList.add('hidden');
+            });
+            
+            // 右键菜单事件绑定
+            document.getElementById('copyCellItem').addEventListener('click', function() {
+                if (currentCell) {
+                    const imageContainer = currentCell.parentElement.querySelector('.cell-image-container');
+                    copyCellContent(currentCell, imageContainer);
+                    contextMenu.classList.add('hidden');
+                }
+            });
+            
+            document.getElementById('addImageItem').addEventListener('click', function() {
+                if (currentCell) {
+                    const imageInput = currentCell.parentElement.parentElement.querySelector('.image-upload-input');
+                    imageInput.click();
+                    contextMenu.classList.add('hidden');
+                }
+            });
+            
+            document.getElementById('clearCellItem').addEventListener('click', function() {
+                if (currentCell) {
+                    currentCell.textContent = '';
+                    const imageContainer = currentCell.parentElement.querySelector('.cell-image-container');
+                    imageContainer.innerHTML = '';
+                    contextMenu.classList.add('hidden');
+                    showToast('单元格已清空');
+                }
+            });
+            
+            // 恢复预设内容按钮
+            document.getElementById('resetTableBtn').addEventListener('click', function() {
+                if (confirm('确定要恢复预设内容吗？当前内容将被覆盖')) {
+                    renderTable();
+                    showToast('已恢复预设内容和图片');
+                }
+            });
+        });
+        
+        // 渲染表格（含预设内容和图片）
+        function renderTable() {
+            const tableBody = document.querySelector('#dataTable tbody');
+            tableBody.innerHTML = ''; // 清空现有内容
+            
+            // 创建12行表格
+            for (let i = 0; i < 12; i++) {
+                const row = document.createElement('tr');
+                
+                // 每行3列
+                for (let j = 0; j < 3; j++) {
+                    const cell = document.createElement('td');
+                    cell.className = 'border border-gray-300 p-2 relative';
+                    
+                    // 单元格容器
+                    const cellContainer = document.createElement('div');
+                    cellContainer.className = 'cell-container relative';
+                    
+                    // 图片容器（放在第一行）
+                    const imageContainer = document.createElement('div');
+                    imageContainer.className = 'cell-image-container mb-2';
+                    
+                    // 创建可编辑的内容容器
+                    const contentEditable = document.createElement('div');
+                    contentEditable.contentEditable = true;
+                    contentEditable.className = 'min-h-[40px] focus:outline-none focus:ring-1 focus:ring-primary pr-12';
+                    contentEditable.dataset.row = i;
+                    contentEditable.dataset.col = j;
+                    
+                    // 设置预设文本内容
+                    const cellData = presetData[i][j];
+                    if (typeof cellData === 'string') {
+                        contentEditable.textContent = cellData;
+                    } else if (cellData && typeof cellData === 'object') {
+                        // 删除提示文字，不设置任何默认文本
+                        contentEditable.textContent = '';
+                    }
+                    
+                    // 如果有预设图片，添加到图片容器（包含标题）
+                    if (typeof cellData === 'object' && cellData.hasImage && cellData.imageUrl) {
+                        // 添加图片标题（图片上方文字）
+                        if (cellData.imageCaption) {
+                            const caption = document.createElement('div');
+                            caption.className = 'image-caption';
+                            caption.textContent = cellData.imageCaption;
+                            imageContainer.appendChild(caption);
+                        }
+                        
+                        // 添加图片
+                        const img = document.createElement('img');
+                        img.src = cellData.imageUrl;
+                        img.className = 'cell-image';
+                        img.alt = cellData.imageCaption || `预设图片-${i+1}行${j+1}列`;
+                        
+                        // 添加删除按钮
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'mt-1 px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 transition-colors';
+                        deleteBtn.innerHTML = '<i class="fa fa-times mr-1"></i>删除图片';
+                        deleteBtn.onclick = function() {
+                            // 删除图片及标题
+                            while (imageContainer.firstChild) {
+                                imageContainer.removeChild(imageContainer.firstChild);
+                            }
+                            deleteBtn.remove();
+                        };
+                        
+                        imageContainer.appendChild(img);
+                        imageContainer.appendChild(deleteBtn);
+                    }
+                    
+                    // 单元格复制按钮
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'cell-copy-btn absolute top-1 right-8 p-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors';
+                    copyBtn.innerHTML = '<i class="fa fa-copy"></i>';
+                    copyBtn.title = '复制单元格内容';
+                    copyBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        copyCellContent(contentEditable, imageContainer);
+                    };
+                    
+                    // 单元格图片按钮
+                    const imageBtn = document.createElement('button');
+                    imageBtn.className = 'cell-image-btn absolute top-1 right-1 p-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors';
+                    imageBtn.innerHTML = '<i class="fa fa-image"></i>';
+                    imageBtn.title = '插入/更换图片';
+                    
+                    // 图片上传输入框
+                    const imageInput = document.createElement('input');
+                    imageInput.type = 'file';
+                    imageInput.accept = 'image/*';
+                    imageInput.className = 'image-upload-input';
+                    imageInput.dataset.row = i;
+                    imageInput.dataset.col = j;
+                    imageInput.onchange = function(e) {
+                        handleCellImageUpload(e, imageContainer);
+                    };
+                    
+                    imageBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        imageInput.click();
+                    };
+                    
+                    // 右键菜单事件
+                    contentEditable.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        currentCell = contentEditable;
+                        currentCellContainer = cellContainer;
+                        
+                        // 显示右键菜单
+                        contextMenu.style.left = `${e.pageX}px`;
+                        contextMenu.style.top = `${e.pageY}px`;
+                        contextMenu.classList.remove('hidden');
+                    });
+                    
+                    // 先添加图片容器，再添加文本容器
+                    cellContainer.appendChild(imageContainer);
+                    cellContainer.appendChild(contentEditable);
+                    cell.appendChild(cellContainer);
+                    cell.appendChild(copyBtn);
+                    cell.appendChild(imageBtn);
+                    cell.appendChild(imageInput);
+                    row.appendChild(cell);
+                }
+                
+                tableBody.appendChild(row);
+            }
+        }
+        
+        // 处理单元格图片上传
+        function handleCellImageUpload(event, imageContainer) {
+            const files = event.target.files;
+            
+            if (files.length > 0) {
+                const file = files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // 清空现有内容
+                    imageContainer.innerHTML = '';
+                    
+                    // 添加自定义图片标题
+                    const customCaption = document.createElement('div');
+                    customCaption.className = 'image-caption';
+                    customCaption.textContent = `自定义图片: ${file.name}`;
+                    imageContainer.appendChild(customCaption);
+                    
+                    // 创建图片元素
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'cell-image';
+                    img.alt = '自定义图片';
+                    
+                    // 添加删除按钮
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'mt-1 px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 transition-colors';
+                    deleteBtn.innerHTML = '<i class="fa fa-times mr-1"></i>删除图片';
+                    deleteBtn.onclick = function() {
+                        while (imageContainer.firstChild) {
+                            imageContainer.removeChild(imageContainer.firstChild);
+                        }
+                        deleteBtn.remove();
+                    };
+                    
+                    imageContainer.appendChild(img);
+                    imageContainer.appendChild(deleteBtn);
+                    
+                    showToast('图片已添加到单元格');
+                };
+                
+                reader.readAsDataURL(file);
+                
+                // 清空input值，以便可以重新上传相同文件
+                event.target.value = '';
+            }
+        }
+        
+        // 复制单元格内容
+        function copyCellContent(cell, imageContainer) {
+            try {
+                const cellText = cell.textContent.trim() || '';
+                
+                if (!cellText && !imageContainer.querySelector('img')) {
+                    showToast('单元格内容为空！', false);
+                    return;
+                }
+                
+                // 只复制文本内容（图片无法复制到剪贴板）
+                navigator.clipboard.writeText(cellText);
+                
+                const message = cellText 
+                    ? `已复制单元格内容: ${cellText.length > 20 ? cellText.substring(0, 20) + '...' : cellText}`
+                    : '已复制单元格文本内容（图片无法复制）';
+                
+                showToast(message);
+                
+                // 添加复制动画效果
+                cell.classList.add('bg-green-50', 'ring-2', 'ring-green-200');
+                setTimeout(() => {
+                    cell.classList.remove('bg-green-50', 'ring-2', 'ring-green-200');
+                }, 1000);
+                
+            } catch (err) {
+                showToast('复制失败，请手动复制', false);
+                console.error('复制错误:', err);
+            }
+        }
+        
+        // 复制整个表格内容
+        document.getElementById('copyTableBtn').addEventListener('click', function() {
+            try {
+                let tableText = '';
+                const rows = document.querySelectorAll('#dataTable tbody tr');
+                
+                rows.forEach((row, rowIndex) => {
+                    const cells = row.querySelectorAll('td .cell-container div[contenteditable="true"]');
+                    const rowData = [];
+                    
+                    cells.forEach(cell => {
+                        rowData.push(cell.textContent.trim() || '');
+                    });
+                    
+                    tableText += rowData.join('\t') + '\n';
+                });
+                
+                // 复制到剪贴板
+                navigator.clipboard.writeText(tableText);
+                showToast('整个表格文本内容已复制到剪贴板！');
+                
+            } catch (err) {
+                showToast('复制失败，请手动复制', false);
+                console.error('复制错误:', err);
+            }
+        });
+        
+        // 清空表格
+        document.getElementById('clearTableBtn').addEventListener('click', function() {
+            if (confirm('确定要清空表格所有内容（包括图片）吗？')) {
+                const allCells = document.querySelectorAll('#dataTable td .cell-container');
+                allCells.forEach(container => {
+                    const contentEditable = container.querySelector('div[contenteditable="true"]');
+                    const imageContainer = container.querySelector('.cell-image-container');
+                    
+                    contentEditable.textContent = '';
+                    imageContainer.innerHTML = '';
+                });
+                showToast('表格已清空');
+            }
+        });
+        
+        // 显示提示消息
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            
+            if (isSuccess) {
+                toast.className = toast.className.replace('bg-red-500', 'bg-secondary');
+                toast.classList.add('bg-secondary');
+            } else {
+                toast.className = toast.className.replace('bg-secondary', 'bg-red-500');
+                toast.classList.add('bg-red-500');
+            }
+            
+            toast.style.opacity = '1';
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
