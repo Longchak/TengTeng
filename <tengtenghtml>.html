@@ -32,6 +32,20 @@
             opacity: 1;
         }
         
+        /* 新增：右下角复制按钮样式 */
+        .bottom-copy-btn {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+        
+        .bottom-copy-btn:hover {
+            opacity: 1;
+            transform: translateY(-1px);
+        }
+        
         /* 右键菜单样式 */
         .context-menu {
             position: absolute;
@@ -54,12 +68,11 @@
         }
         
         /* 单元格图片样式 */
-        /* 修改单元格内图片的大小限制 */
         .cell-image {
-            max-width: 250px; /* 调整图片最大宽度 */
-            max-height: 200px; /* 调整图片最大高度 */
-            width: 100%; /* 图片宽度自适应单元格 */
-            height: auto; /* 保持图片比例 */
+            max-width: 250px;
+            max-height: 200px;
+            width: 100%;
+            height: auto;
         }
         
         /* 图片标题样式 */
@@ -76,30 +89,107 @@
             display: none;
         }
 
-        /* 修改表格容器的宽度限制 */
+        /* 表格容器样式 */
         #dataTable {
-            width: 100%; /* 可以改为固定宽度如800px，或百分比如90% */
-            max-width: 4800; /* 限制最大宽度 */
-            margin: 0 auto; /* 居中显示 */
+            width: 100%;
+            max-width: 4800px;
+            margin: 0 auto;
         }
-        /* 修改单元格内边距和最小宽度 */
+        
+        /* 单元格基础样式 */
         td, th {
-            padding: 4px 8px; /* 调整单元格内边距（上下左右） */
-            min-width: 300px; /* 设置单元格最小宽度 */
-            max-width: 1000px; /* 设置单元格最大宽度 */
+            padding: 4px 8px;
+            transition: background-color 0.2s;
         }
-        /* 修改单元格内文本样式 */
+        
+        td:hover {
+            background-color: #f8fafc;
+        }
+        
+        /* 可编辑文本样式 */
         div[contenteditable="true"] {
-            font-size: 12px; /* 调整字体大小 */
-            line-height: 1.5; /* 调整行高 */
-            min-height: 50px; /* 调整单元格最小高度 */
-            padding: 8px; /* 文本区域内边距 */
+            font-size: 12px;
+            line-height: 1.5;
+            min-height: 50px;
+            padding: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
-
-        /* 单独调整图片列宽度 */
+        /* 列宽设置 */
+        td:nth-child(1), th:nth-child(1) {
+            min-width: 200px;
+            max-width: 250px;
+        }
+        
+        td:nth-child(2), th:nth-child(2) {
+            min-width: 300px;
+        }
+        
         td:nth-child(3), th:nth-child(3) {
-            min-width: 300px; /* 图片列设置更大的最小宽度 */
+            min-width: 300px;
+        }
+        
+        /* 滚动条美化 */
+        .overflow-x-auto {
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #2563EB #f1f5f9;
+            margin-bottom: 1rem;
+        }
+
+        .overflow-x-auto::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .overflow-x-auto::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+            background-color: #2563EB;
+            border-radius: 4px;
+        }
+        
+        /* 按钮样式优化 */
+        button {
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            td, th {
+                min-width: 200px !important;
+                padding: 4px 6px;
+            }
+            
+            div[contenteditable="true"] {
+                font-size: 11px;
+                min-height: 40px;
+            }
+            
+            .cell-image {
+                max-width: 150px;
+                max-height: 120px;
+            }
+            
+            .max-w-5xl {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .px-6 {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
         }
     </style>
 </head>
@@ -134,7 +224,7 @@
             <table id="dataTable" class="w-full border-collapse">
                 <thead>
                     <tr class="bg-gray-100">
-                        <th class="border border-gray-300 p-2 text-left"></th>
+                        <th class="border border-gray-300 p-2 text-left">主题</th>
                         <th class="border border-gray-300 p-2 text-left">男</th>
                         <th class="border border-gray-300 p-2 text-left">女</th>
                     </tr>
@@ -171,7 +261,7 @@
         let currentCellContainer = null;
         const contextMenu = document.getElementById('contextMenu');
         
-        // 预设表格数据（12行×3列）- 新增imageCaption字段
+        // 预设表格数据（12行×3列）
         const presetData = [
             [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '万圣节(哈利波特)'},
             '保持人脸不变，去掉原背景，生成4张不同姿势的照片（多角度）。一位亚裔男性的哈利波特格兰芬多万圣节主题写真，身着带有格兰芬多院徽的巫师袍，皮肤白皙，高光打亮五官，浅棕色头发；在融入万圣节元素的复古哥特式魔法药剂教室中，用魔杖搅拌冒大坩埚（橘黄色烟雾），周围点缀着万圣节南瓜灯（内置蜡烛、带鬼脸雕刻）、堆堆南瓜、黑色毛绒蜘蛛，药剂架上还摆放着贴有万圣节主题标签的古老药剂瓶；背景是石质拱顶建筑，穿插着南瓜烛光的暖调光影，地面散落着金色南瓜装饰与万圣节魔法糖果，橘黄色的魔法烟雾组成 “Happy Halloween” 字样（置于画面顶部）；画面照片级真实，细节丰富，暗调色彩中淡黄色烟雾与南瓜橙形成强烈视觉冲击，尽显魔法世界融合万圣节的复古奇幻质感。', 
@@ -180,7 +270,7 @@
             '生成4张照片，3：4比例，保持人物长相百分之百不变。风格滤镜：法式发光少男人像写真，有细腻的胶片颗粒感和朦胧唯美感。背景：森林里，有轻微光束。阳光洒在一片虞美人花上。人物造型：深棕色微卷短发，头上戴着绿草+小白花的花环（部分照片微光打在发丝上）。身穿米白色法式复古风格长衬衫与宽松长裤，整体造型清新自然。 妆容与质感：皮肤通透，脸上有自然红润与轻微唇色，画面带有朦胧感。 构图：人物居中占比三分之一，人物整体在发光。人物蹲在虞美人花丛中，也有站在花丛中，也有提着衣摆奔跑在花丛中等动作。有侧逆光打在脸上，有的光打在飘逸的发丝上。人物表情或温柔浅笑，或眼神放空，动作自然灵动。', 
             '生成4张照片，3：4比例，保持人物长相百分之百不变。风格滤镜：法式发光少女人像写真，有细腻的胶片颗粒感和朦胧唯美感。背景：森林里，有轻微光束。阳光晒在一片虞美人花上。人物造型：超长卷发(浅棕色)头上戴着绿草+小白花的花环（部分发丝扬在脸上，部分照片微光打在飘起的发丝上）。身穿米白色法式复古风格长裙。妆容：皮肤通透且脸上有腮红，唇釉。画面朦胧感。构图：人物居中占比三分之一，人物整体在发光，人物蹲在虞美人花丛中，也有站在虞美人花丛中，也有手提着裙子奔跑在花丛中等动作。有侧逆光打在脸上，有的光打在飘逸的头发上，人物表情或温柔浅笑或眼神放空，动作自然灵动。',],
             [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '聖誕'},
-            '比例：3:4。帮我生成一组4张真人写真人物要求：保持人物五官脸型不变，去除所有原背景。妆容：圣诞氛围感妆容，，淡粉色腮红轻扫颧骨，皮肤白皙细腻，带轻微光泽。服饰：蓝白条纹衬衫 + 酒红色格纹领带，外搭藏青色 V 领针织开衫（带金色纽扣），下搭同色系红格纹长裤；搭配白色中筒袜 + 黑色皮质牛津鞋。动作参考：1.盘腿坐姿，双臂交叉抱于胸前，身体微侧看镜头2.单手托腮，头部轻靠在圣诞树旁3.手持包装好的圣诞礼物（红绿配色），注视礼物4.侧身倚靠在木质柜旁，手搭在柜面配饰：啡色鹿角发箍（偏复古造型）。背景：圣诞主题场景——白色雪松圣诞树（装饰红金彩球+毛绒玩偶）、木质壁炉（旁放圣诞花环+堆叠书籍）、圣诞袜装饰。色调：暖调复古氛围，整体偏暖棕 + 红金配色，带轻微胶片颗粒感，光线柔和温馨。', 
+            '比例：3:4。帮我生成一组4张真人写真人物要求：保持人物五官脸型不变，去除所有原背景。妆容：圣诞氛围感妆容，淡粉色腮红轻扫颧骨，皮肤白皙细腻，带轻微光泽。服饰：蓝白条纹衬衫 + 酒红色格纹领带，外搭藏青色 V 领针织开衫（带金色纽扣），下搭同色系红格纹长裤；搭配白色中筒袜 + 黑色皮质牛津鞋。动作参考：1.盘腿坐姿，双臂交叉抱于胸前，身体微侧看镜头2.单手托腮，头部轻靠在圣诞树旁3.手持包装好的圣诞礼物（红绿配色），注视礼物4.侧身倚靠在木质柜旁，手搭在柜面配饰：啡色鹿角发箍（偏复古造型）。背景：圣诞主题场景——白色雪松圣诞树（装饰红金彩球+毛绒玩偶）、木质壁炉（旁放圣诞花环+堆叠书籍）、圣诞袜装饰。色调：暖调复古氛围，整体偏暖棕 + 红金配色，带轻微胶片颗粒感，光线柔和温馨。', 
             '帮我生成一组4张真人写真，保持人物五官脸型不变，去除所有原背景。人物妆容：圣诞氛围感妆容，复古红棕唇釉，淡粉色腮红扫在苹果肌，眼妆用红棕细闪+自然卷翘睫毛，皮肤白皙细腻有轻微光泽。衣服：蓝白条纹衬衫+酒红色格纹领带，外搭藏青色V领针织开衫（带金色纽扣），下搭同色系红格纹及膝長裙；搭配白色中筒堆堆袜+黑色玛丽珍鞋。动作可参考：1. 盘腿坐姿，双臂交叉抱于胸前，身体微侧看镜头2. 单手托腮，头部轻靠在圣诞树旁3. 手持包装好的圣诞礼物（红绿配色），看向礼物4. 侧身倚靠在木质柜旁，手搭在柜面配饰：红色宽边发箍。背景：圣诞主题场景——白色雪松圣诞树（装饰红金彩球+毛绒玩偶）、木质壁炉（旁放圣诞花环+堆叠书籍）、圣诞袜装饰。色调：暖调复古氛围，整体偏暖棕+红金配色，带轻微胶片颗粒感，光线柔和温馨。比例 3:4。',],
             [{hasImage: true, imageUrl: 'https://picsum.photos/id/1/400/300', imageCaption: '巨人微縮街境'},
             '生成4張圖片，比例：3:4。图中人物的脸不要变，去除全部背景生成图片。这张图片以极具冲击力的超现实主义视角，展现了一位如神话人物般巨大的人物从城市街道探出头。有部分肢体被建筑物遮挡，人物参考我输入图的主体形象的服饰配饰、发型、装饰等，需要保持保持主体一致性、相似度。主体双臂撑着建筑物，头向前伸，仿佛正在窥视或掌控这个微缩世界。采用极端的低角度仰拍使观者如同街上的行人般渺小，仰望这震撼的一幕。背景是细节丰富的复古都市景观；美式复古色调的建筑立面上可见 “大排挡”“澳门猪扒包”等复古招牌，以及交通信号灯、车辆和行人点缀其间，营造出真实又疏离的都市氛围。巨人与微缩城市之间形成极致的尺度对比，人物与建筑产生强烈视觉分离，奇幻的叙事与仰视的构图共同造就了这幅充满压迫感与戏剧张力的非凡影像，藍天白雲。', 
@@ -326,7 +416,7 @@
                         imageContainer.appendChild(deleteBtn);
                     }
                     
-                    // 单元格复制按钮
+                    // 单元格复制按钮（右上角）
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'cell-copy-btn absolute top-1 right-8 p-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors';
                     copyBtn.innerHTML = '<i class="fa fa-copy"></i>';
@@ -336,7 +426,7 @@
                         copyCellContent(contentEditable, imageContainer);
                     };
                     
-                    // 单元格图片按钮
+                    // 单元格图片按钮（右上角）
                     const imageBtn = document.createElement('button');
                     imageBtn.className = 'cell-image-btn absolute top-1 right-1 p-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors';
                     imageBtn.innerHTML = '<i class="fa fa-image"></i>';
@@ -373,6 +463,19 @@
                     // 先添加图片容器，再添加文本容器
                     cellContainer.appendChild(imageContainer);
                     cellContainer.appendChild(contentEditable);
+                    
+                    // 对于男、女列（第2、3列）添加右下角复制按钮
+                    if (j === 1 || j === 2) {
+                        const bottomCopyBtn = document.createElement('button');
+                        bottomCopyBtn.className = 'bottom-copy-btn px-2 py-1 bg-primary/80 text-white rounded text-xs hover:bg-primary';
+                        bottomCopyBtn.innerHTML = '<i class="fa fa-copy mr-1"></i>複製';
+                        bottomCopyBtn.onclick = function(e) {
+                            e.stopPropagation();
+                            copyCellContent(contentEditable, imageContainer);
+                        };
+                        cellContainer.appendChild(bottomCopyBtn);
+                    }
+                    
                     cell.appendChild(cellContainer);
                     cell.appendChild(copyBtn);
                     cell.appendChild(imageBtn);
